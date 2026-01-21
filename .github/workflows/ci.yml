@@ -33,10 +33,10 @@ jobs:
           restore-keys: ${{ runner.os }}-sonar
 
       - name: Build, test and analyze (SonarCloud)
+        working-directory: backend/tqs
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          cd backend
           mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
             -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
             -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
