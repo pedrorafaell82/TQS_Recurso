@@ -52,4 +52,19 @@ public class UserService {
         return userRepository.findByEmail(email.toLowerCase())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
     }
+
+    @Transactional
+    public void updateRoles(Long userId, Set<String> roleNames) {
+        AppUser user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        Set<Role> roles = roleNames.stream()
+                .map(String::trim)
+                .map(String::toUpperCase)
+                .map(Role::valueOf)
+                .collect(Collectors.toSet());
+
+        user.setRoles(roles);
+        userRepository.save(user);
+    }
 }

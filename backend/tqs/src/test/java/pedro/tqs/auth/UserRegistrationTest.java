@@ -15,7 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class UserRegistrationIT {
+class UserRegistrationTest {
 
     @Autowired MockMvc mvc;
     @Autowired UserRepository userRepository;
