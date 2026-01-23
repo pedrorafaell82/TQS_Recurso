@@ -15,7 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class UserRegistrationIT {
+class UserRegistrationTest {
 
     @Autowired MockMvc mvc;
     @Autowired UserRepository userRepository;
@@ -54,7 +54,9 @@ class UserRegistrationIT {
         mvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
-            .andExpect(status().isConflict());
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.title").value("Email already exists"));
+
     }
 
     @Test
@@ -78,5 +80,17 @@ class UserRegistrationIT {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.email").value("pedro@example.com"))
             .andExpect(jsonPath("$.roles", hasItem("VOLUNTEER")));
+    }
+
+    @Test
+    void register_invalidPayload_returns400_withErrors() throws Exception {
+        mvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                {"name":"","email":"not-an-email","password":"x"}
+                """))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.title").value("Validation failed"))
+            .andExpect(jsonPath("$.errors").exists());
     }
 }
