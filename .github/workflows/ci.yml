@@ -11,8 +11,7 @@ permissions:
   pull-requests: read
 
 jobs:
-  build_and_scan:
-    name: Build & Sonar Scan
+  build-and-analyze:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,41 +32,11 @@ jobs:
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
-      - name: Build & test (generates JaCoCo)
+      - name: Build, test and analyze (SonarCloud)
         working-directory: backend/tqs
-        run: mvn -B verify
-
-      - name: SonarCloud scan
-        uses: SonarSource/sonarcloud-github-action@v3
-        with:
-          projectBaseDir: backend/tqs
-          args: >
-            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
             -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
-            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-      - name: Upload Sonar metadata (report-task.txt)
-        uses: actions/upload-artifact@v4
-        with:
-          name: sonar-report
-          path: backend/tqs/.scannerwork/report-task.txt
-
-  quality_gate:
-    name: Sonar Quality Gate
-    runs-on: ubuntu-latest
-    needs: build_and_scan
-    steps:
-      - name: Download Sonar metadata
-        uses: actions/download-artifact@v4
-        with:
-          name: sonar-report
-          path: sonar-report
-
-      - name: Check Quality Gate
-        uses: SonarSource/sonarcloud-quality-gate-action@v1.1.0
-        with:
-          scanMetadataReportFile: sonar-report/report-task.txt
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
