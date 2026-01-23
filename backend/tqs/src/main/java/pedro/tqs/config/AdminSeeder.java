@@ -1,9 +1,9 @@
 package pedro.tqs.config;
 
 import pedro.tqs.user.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Set;
@@ -12,18 +12,26 @@ import java.util.Set;
 public class AdminSeeder {
 
     @Bean
-    CommandLineRunner seedAdmin(UserRepository users, PasswordEncoder encoder) {
+    CommandLineRunner seedAdmin(
+            UserRepository users,
+            PasswordEncoder encoder,
+            @Value("${app.admin.email:admin@local.test}") String adminEmail,
+            @Value("${app.admin.password:}") String adminPassword
+    ) {
         return args -> {
-            String email = "admin@local.test";
-            if (!users.existsByEmail(email)) {
+            if (adminPassword == null || adminPassword.isBlank()) {
+                throw new IllegalStateException("Missing app.admin.password (set it via env or properties)");
+            }
+
+            if (!users.existsByEmail(adminEmail)) {
                 AppUser admin = new AppUser(
                         "Admin",
-                        email,
-                        encoder.encode("adminPass1"),
-                        Set.of(Role.ADMIN)
+                        adminEmail,
+                        encoder.encode(adminPassword),
+                        Set.of(pedro.tqs.user.Role.ADMIN)
                 );
                 users.save(admin);
             }
-        };
+        }; 
     }
 }
