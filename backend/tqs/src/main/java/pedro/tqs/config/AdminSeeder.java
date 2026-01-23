@@ -20,7 +20,7 @@ public class AdminSeeder {
     ) {
         return args -> {
             if (adminPassword == null || adminPassword.isBlank()) {
-                throw new IllegalStateException("Missing app.admin.password (set it via env or properties)");
+                return;
             }
 
             if (!users.existsByEmail(adminEmail)) {
