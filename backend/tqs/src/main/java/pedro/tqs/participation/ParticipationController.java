@@ -37,4 +37,11 @@ public class ParticipationController {
         return service.getMyParticipations(auth.getName());
     }
 
+    @PostMapping("/{id}/cancel")
+    @PreAuthorize("hasRole('VOLUNTEER')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void cancel(@PathVariable Long id, Authentication auth) {
+        service.cancel(id, auth.getName());
+    }
+
 }

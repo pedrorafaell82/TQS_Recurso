@@ -118,5 +118,21 @@ public class ParticipationService {
                 .toList();
     }
 
+    @Transactional
+    public void cancel(Long participationId, String volunteerEmail) {
+        Participation p = participations.findById(participationId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Participation not found"));
+
+        if (!p.getVolunteer().getEmail().equalsIgnoreCase(volunteerEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your participation");
+        }
+
+        if (p.getStatus() != ParticipationStatus.PENDING
+                && p.getStatus() != ParticipationStatus.APPROVED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot cancel participation");
+        }
+
+        p.setStatus(ParticipationStatus.CANCELLED);
+    }
 
 }
