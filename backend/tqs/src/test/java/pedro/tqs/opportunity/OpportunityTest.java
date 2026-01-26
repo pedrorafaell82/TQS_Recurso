@@ -55,6 +55,18 @@ class OpportunityTest {
         return u.getId();
     }
 
+    private Long createOpportunityAsPromoter() throws Exception {
+        mvc.perform(post("/api/opportunities")
+                .with(httpBasic("promoter@test.com", "strongPass1"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"title":"Beach","description":"Cleanup","date":"2026-02-10","durationHours":4,"points":10}
+                """))
+            .andExpect(status().isCreated());
+
+        return opps.findAll().get(0).getId();
+    }
+
     @Test
     void createOpportunity_asVolunteer_forbidden() throws Exception {
         mvc.perform(post("/api/auth/register")
@@ -173,5 +185,102 @@ class OpportunityTest {
         .andExpect(status().isNotFound());
     }
 
+    @Test
+    void updateOpportunity_asPromoter_updatesFields() throws Exception {
+        registerVolunteerAndPromote();
+        Long id = createOpportunityAsPromoter();
+
+        mvc.perform(put("/api/opportunities/" + id)
+                .with(httpBasic("promoter@test.com", "strongPass1"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"title":"New Title","description":"New Desc","date":"2026-03-01","durationHours":2,"points":50}
+                """))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.title").value("New Title"))
+            .andExpect(jsonPath("$.points").value(50));
+
+        mvc.perform(get("/api/opportunities/" + id)
+                .with(httpBasic("promoter@test.com", "strongPass1")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.title").value("New Title"))
+            .andExpect(jsonPath("$.durationHours").value(2));
+    }
+
+    @Test
+    void updateOpportunity_asVolunteer_forbidden() throws Exception {
+        registerVolunteerAndPromote();
+        Long id = createOpportunityAsPromoter();
+
+        mvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"name":"Vol","email":"vol2@test.com","password":"strongPass1"}
+                """))
+            .andExpect(status().isCreated());
+
+        mvc.perform(put("/api/opportunities/" + id)
+                .with(httpBasic("vol2@test.com", "strongPass1"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"title":"Hack","description":"Hack","date":"2026-03-01","durationHours":2,"points":1}
+                """))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void updateOpportunity_notFound_returns404() throws Exception {
+        registerVolunteerAndPromote();
+
+        mvc.perform(put("/api/opportunities/99999")
+                .with(httpBasic("promoter@test.com", "strongPass1"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"title":"X","description":"Y","date":"2026-03-01","durationHours":2,"points":1}
+                """))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deactivateOpportunity_asPromoter_removesFromBrowse() throws Exception {
+        registerVolunteerAndPromote();
+        Long id = createOpportunityAsPromoter();
+
+        mvc.perform(patch("/api/opportunities/" + id + "/deactivate")
+                .with(httpBasic("promoter@test.com", "strongPass1")))
+            .andExpect(status().isNoContent());
+
+        mvc.perform(get("/api/opportunities")
+                .with(httpBasic("promoter@test.com", "strongPass1")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    void deactivateOpportunity_asVolunteer_forbidden() throws Exception {
+        registerVolunteerAndPromote();
+        Long id = createOpportunityAsPromoter();
+
+        mvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"name":"Vol","email":"vol3@test.com","password":"strongPass1"}
+                """))
+            .andExpect(status().isCreated());
+
+        mvc.perform(patch("/api/opportunities/" + id + "/deactivate")
+                .with(httpBasic("vol3@test.com", "strongPass1")))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deactivateOpportunity_notFound_returns404() throws Exception {
+        registerVolunteerAndPromote();
+
+        mvc.perform(patch("/api/opportunities/99999/deactivate")
+                .with(httpBasic("promoter@test.com", "strongPass1")))
+            .andExpect(status().isNotFound());
+    }
 
 }

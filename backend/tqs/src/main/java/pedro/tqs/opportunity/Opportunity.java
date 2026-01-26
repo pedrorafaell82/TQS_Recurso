@@ -50,4 +50,12 @@ public class Opportunity {
     public int getPoints() { return points; }
     public boolean isActive() { return active; }
     public pedro.tqs.user.AppUser getCreatedBy() { return createdBy; }
+
+    public void setTitle(String title) { this.title = title; }
+    public void setDescription(String description) { this.description = description; }
+    public void setDate(LocalDate date) { this.date = date; }
+    public void setDurationHours(int durationHours) { this.durationHours = durationHours; }
+    public void setPoints(int points) { this.points = points; }
+    public void setActive(boolean active) { this.active = active; }
+
 }
