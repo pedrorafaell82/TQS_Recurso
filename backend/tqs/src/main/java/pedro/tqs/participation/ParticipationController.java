@@ -4,6 +4,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
+import pedro.tqs.participation.dto.ParticipationResponse;
 
 @RestController
 @RequestMapping("/api/participations")
@@ -28,4 +30,11 @@ public class ParticipationController {
     public void reject(@PathVariable Long id, Authentication auth) {
         service.reject(id, auth.getName());
     }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('VOLUNTEER')")
+    public List<ParticipationResponse> myParticipations(Authentication auth) {
+        return service.getMyParticipations(auth.getName());
+    }
+
 }

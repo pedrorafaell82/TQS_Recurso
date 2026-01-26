@@ -39,17 +39,13 @@ public class ParticipationService {
         }
 
         participations.findByVolunteerAndOpportunity(volunteer, opp).ifPresent(existing -> {
-            // You can decide policy; this is simplest for MVP:
             if (existing.getStatus() != ParticipationStatus.CANCELLED
                     && existing.getStatus() != ParticipationStatus.REJECTED) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Already enrolled");
             }
-            // if CANCELLED/REJECTED, we allow re-enroll by setting back to PENDING
             existing.setStatus(ParticipationStatus.PENDING);
-            // returning from lambda isn't possible; so we throw to stop flow? better do below:
         });
 
-        // Handle "re-enroll" cleanly:
         var existingOpt = participations.findByVolunteerAndOpportunity(volunteer, opp);
         if (existingOpt.isPresent()) {
             Participation existing = existingOpt.get();
@@ -110,5 +106,17 @@ public class ParticipationService {
 
         p.setStatus(ParticipationStatus.REJECTED);
     }
+
+    @Transactional(readOnly = true)
+    public java.util.List<ParticipationResponse> getMyParticipations(String volunteerEmail) {
+        users.findByEmail(volunteerEmail.toLowerCase())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, USER_NOT_FOUND));
+
+        return participations.findByVolunteer_Email(volunteerEmail.toLowerCase())
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
 
 }
