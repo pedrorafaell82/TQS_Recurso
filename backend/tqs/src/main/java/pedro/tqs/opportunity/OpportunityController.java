@@ -1,15 +1,14 @@
 package pedro.tqs.opportunity;
 
 import pedro.tqs.opportunity.dto.*;
-import pedro.tqs.user.AppUser;
 import jakarta.validation.Valid;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import pedro.tqs.participation.ParticipationService;
+import pedro.tqs.participation.dto.ParticipationResponse;
 
 import java.net.URI;
 import java.util.List;
@@ -19,9 +18,11 @@ import java.util.List;
 public class OpportunityController {
 
     private final OpportunityService service;
+    private final ParticipationService participationService;
 
-    public OpportunityController(OpportunityService service) {
+    public OpportunityController(OpportunityService service, ParticipationService participationService) {
         this.service = service;
+        this.participationService = participationService;
     }
 
     @PreAuthorize("hasRole('PROMOTER')")
@@ -57,4 +58,10 @@ public class OpportunityController {
         service.deactivate(id, auth.getName());
     }
 
+    @PostMapping("/{id}/enroll")
+    @PreAuthorize("hasRole('VOLUNTEER')")
+    public ResponseEntity<ParticipationResponse> enroll(@PathVariable Long id, Authentication auth) {
+        ParticipationResponse created = participationService.enroll(id, auth.getName());
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
 }
