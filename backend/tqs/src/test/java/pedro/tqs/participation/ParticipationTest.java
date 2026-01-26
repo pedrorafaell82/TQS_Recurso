@@ -57,9 +57,9 @@ class ParticipationTest {
             .andExpect(status().isNoContent());
     }
 
-    private Long createOpportunityAsPromoter() throws Exception {
+    private Long createOpportunityAsPromoter(String promoterEmail) throws Exception {
         mvc.perform(post("/api/opportunities")
-                .with(httpBasic("promoter@test.com", "strongPass1"))
+                .with(httpBasic(promoterEmail, "strongPass1"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {"title":"Beach","description":"Cleanup","date":"2026-02-10","durationHours":4,"points":10}
@@ -68,11 +68,12 @@ class ParticipationTest {
         return opps.findAll().get(0).getId();
     }
 
+
     @Test
     void enroll_asVolunteer_created() throws Exception {
         Long promoterId = register("Promoter", "promoter@test.com");
         promoteToPromoter(promoterId);
-        Long oppId = createOpportunityAsPromoter();
+        Long oppId = createOpportunityAsPromoter("promoter@test.com");
 
         register("Vol", "vol@test.com");
 
@@ -87,7 +88,7 @@ class ParticipationTest {
     void enroll_twice_conflict() throws Exception {
         Long promoterId = register("Promoter", "promoter@test.com");
         promoteToPromoter(promoterId);
-        Long oppId = createOpportunityAsPromoter();
+        Long oppId = createOpportunityAsPromoter("promoter@test.com");
 
         register("Vol", "vol@test.com");
 
@@ -104,7 +105,7 @@ class ParticipationTest {
     void enroll_asPromoter_forbidden() throws Exception {
         Long promoterId = register("Promoter", "promoter@test.com");
         promoteToPromoter(promoterId);
-        Long oppId = createOpportunityAsPromoter();
+        Long oppId = createOpportunityAsPromoter("promoter@test.com");
 
         mvc.perform(post("/api/opportunities/" + oppId + "/enroll")
                 .with(httpBasic("promoter@test.com", "strongPass1")))
@@ -124,7 +125,7 @@ class ParticipationTest {
     void approveParticipation_asOwner_changesStatusToApproved() throws Exception {
         Long promoterId = register("Promoter", "promoter@test.com");
         promoteToPromoter(promoterId);
-        Long oppId = createOpportunityAsPromoter();
+        Long oppId = createOpportunityAsPromoter("promoter@test.com");
         register("Vol", "vol@test.com");
 
         mvc.perform(post("/api/opportunities/" + oppId + "/enroll")
@@ -145,7 +146,7 @@ class ParticipationTest {
     void rejectParticipation_asOwner_changesStatusToRejected() throws Exception {
         Long promoterId = register("Promoter", "promoter@test.com");
         promoteToPromoter(promoterId);
-        Long oppId = createOpportunityAsPromoter();
+        Long oppId = createOpportunityAsPromoter("promoter@test.com");
         register("Vol", "vol@test.com");
 
         mvc.perform(post("/api/opportunities/" + oppId + "/enroll")
@@ -166,7 +167,7 @@ class ParticipationTest {
     void approveParticipation_asVolunteer_forbidden() throws Exception {
         Long promoterId = register("Promoter", "promoter@test.com");
         promoteToPromoter(promoterId);
-        Long oppId = createOpportunityAsPromoter();
+        Long oppId = createOpportunityAsPromoter("promoter@test.com");
         register("Vol", "vol@test.com");
 
         mvc.perform(post("/api/opportunities/" + oppId + "/enroll")
@@ -178,6 +179,109 @@ class ParticipationTest {
         mvc.perform(post("/api/participations/" + partId + "/approve")
                 .with(httpBasic("vol@test.com", "strongPass1")))
             .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void enroll_inInactiveOpportunity_returns400() throws Exception {
+        Long promoterId = register("Promoter", "promoter@test.com");
+        promoteToPromoter(promoterId);
+        Long oppId = createOpportunityAsPromoter("promoter@test.com");
+
+        mvc.perform(patch("/api/opportunities/" + oppId + "/deactivate")
+                .with(httpBasic("promoter@test.com", "strongPass1")))
+            .andExpect(status().isNoContent());
+
+        register("Vol", "vol@test.com");
+
+        mvc.perform(post("/api/opportunities/" + oppId + "/enroll")
+                .with(httpBasic("vol@test.com", "strongPass1")))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void approveParticipation_whenNotPending_returns409() throws Exception {
+        Long promoterId = register("Promoter", "promoter@test.com");
+        promoteToPromoter(promoterId);
+        Long oppId = createOpportunityAsPromoter("promoter@test.com");
+        register("Vol", "vol@test.com");
+
+        mvc.perform(post("/api/opportunities/" + oppId + "/enroll")
+                .with(httpBasic("vol@test.com", "strongPass1")))
+            .andExpect(status().isCreated());
+
+        Long partId = participations.findAll().get(0).getId();
+
+        mvc.perform(post("/api/participations/" + partId + "/approve")
+                .with(httpBasic("promoter@test.com", "strongPass1")))
+            .andExpect(status().isNoContent());
+
+        mvc.perform(post("/api/participations/" + partId + "/approve")
+                .with(httpBasic("promoter@test.com", "strongPass1")))
+            .andExpect(status().isConflict());
+    }
+
+    @Test
+    void rejectParticipation_whenNotPending_returns409() throws Exception {
+        Long promoterId = register("Promoter", "promoter@test.com");
+        promoteToPromoter(promoterId);
+        Long oppId = createOpportunityAsPromoter("promoter@test.com");
+        register("Vol", "vol@test.com");
+
+        mvc.perform(post("/api/opportunities/" + oppId + "/enroll")
+                .with(httpBasic("vol@test.com", "strongPass1")))
+            .andExpect(status().isCreated());
+
+        Long partId = participations.findAll().get(0).getId();
+
+        mvc.perform(post("/api/participations/" + partId + "/reject")
+                .with(httpBasic("promoter@test.com", "strongPass1")))
+            .andExpect(status().isNoContent());
+
+        mvc.perform(post("/api/participations/" + partId + "/reject")
+                .with(httpBasic("promoter@test.com", "strongPass1")))
+            .andExpect(status().isConflict());
+    }
+
+    @Test
+    void approveParticipation_asOtherPromoter_forbidden() throws Exception {
+        Long promoter1 = register("Promoter1", "p1@test.com");
+        promoteToPromoter(promoter1);
+        Long oppId = createOpportunityAsPromoter("p1@test.com");
+
+        Long promoter2 = register("Promoter2", "p2@test.com");
+        promoteToPromoter(promoter2);
+
+        register("Vol", "vol@test.com");
+
+        mvc.perform(post("/api/opportunities/" + oppId + "/enroll")
+                .with(httpBasic("vol@test.com", "strongPass1")))
+            .andExpect(status().isCreated());
+
+        Long partId = participations.findAll().get(0).getId();
+
+        mvc.perform(post("/api/participations/" + partId + "/approve")
+                .with(httpBasic("p2@test.com", "strongPass1")))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void reenroll_afterRejected_setsPendingAgain() throws Exception {
+        Long promoterId = register("Promoter", "promoter@test.com");
+        promoteToPromoter(promoterId);
+        Long oppId = createOpportunityAsPromoter("promoter@test.com");
+        register("Vol", "vol@test.com");
+        mvc.perform(post("/api/opportunities/" + oppId + "/enroll")
+                .with(httpBasic("vol@test.com", "strongPass1")))
+            .andExpect(status().isCreated());
+
+        Long partId = participations.findAll().get(0).getId();
+        mvc.perform(post("/api/participations/" + partId + "/reject")
+                .with(httpBasic("promoter@test.com", "strongPass1")))
+            .andExpect(status().isNoContent());
+
+        mvc.perform(post("/api/opportunities/" + oppId + "/enroll")
+                .with(httpBasic("vol@test.com", "strongPass1")))
+            .andExpect(status().isConflict());
     }
 
 }

@@ -16,6 +16,7 @@ public class ParticipationService {
     private final ParticipationRepository participations;
     private final OpportunityRepository opportunities;
     private final UserRepository users;
+    private static final String USER_NOT_FOUND = "User not found";
 
     public ParticipationService(ParticipationRepository participations,
                                 OpportunityRepository opportunities,
@@ -28,7 +29,7 @@ public class ParticipationService {
     @Transactional
     public ParticipationResponse enroll(Long opportunityId, String volunteerEmail) {
         AppUser volunteer = users.findByEmail(volunteerEmail.toLowerCase())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, USER_NOT_FOUND));
 
         Opportunity opp = opportunities.findById(opportunityId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Opportunity not found"));
@@ -78,7 +79,7 @@ public class ParticipationService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Participation not found"));
 
         AppUser promoter = users.findByEmail(promoterEmail.toLowerCase())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, USER_NOT_FOUND));
 
         if (!p.getOpportunity().getCreatedBy().getId().equals(promoter.getId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not owner of opportunity");
@@ -97,7 +98,7 @@ public class ParticipationService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Participation not found"));
 
         AppUser promoter = users.findByEmail(promoterEmail.toLowerCase())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, USER_NOT_FOUND));
 
         if (!p.getOpportunity().getCreatedBy().getId().equals(promoter.getId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not owner of opportunity");
