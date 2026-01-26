@@ -284,4 +284,45 @@ class ParticipationTest {
             .andExpect(status().isConflict());
     }
 
+    @Test
+    void getMyParticipations_asVolunteer_returnsList() throws Exception {
+        Long promoterId = register("Promoter", "promoter@test.com");
+        promoteToPromoter(promoterId);
+        Long oppId = createOpportunityAsPromoter("promoter@test.com");
+
+        register("Vol", "vol@test.com");
+
+        mvc.perform(post("/api/opportunities/" + oppId + "/enroll")
+                .with(httpBasic("vol@test.com", "strongPass1")))
+            .andExpect(status().isCreated());
+
+        mvc.perform(get("/api/participations/me")
+                .with(httpBasic("vol@test.com", "strongPass1")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(1))
+            .andExpect(jsonPath("$[0].opportunityId").value(oppId))
+            .andExpect(jsonPath("$[0].status").value("PENDING"));
+    }
+
+    @Test
+    void getMyParticipations_noParticipations_returnsEmptyList() throws Exception {
+        register("Vol", "vol@test.com");
+
+        mvc.perform(get("/api/participations/me")
+                .with(httpBasic("vol@test.com", "strongPass1")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    void getMyParticipations_asPromoter_forbidden() throws Exception {
+        Long promoterId = register("Promoter", "promoter@test.com");
+        promoteToPromoter(promoterId);
+
+        mvc.perform(get("/api/participations/me")
+                .with(httpBasic("promoter@test.com", "strongPass1")))
+            .andExpect(status().isForbidden());
+    }
 }

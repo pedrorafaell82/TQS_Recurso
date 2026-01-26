@@ -36,7 +36,12 @@ public class SecurityConfig {
         http
             // Stateless REST API: no HTTP session, no cookies
             .sessionManagement(sm -> sm.sessionCreationPolicy(STATELESS))
-            .csrf(csrf -> csrf.disable())
+            /*
+            * CSRF protection is only relevant for browser-based sessions using cookies.
+            * This project uses stateless HTTP Basic for /api/** (no cookies), so CSRF is not required there.
+            * We keep CSRF enabled by default and ignore it only for API endpoints and the H2 console.
+            */
+            .csrf(csrf -> csrf.ignoringRequestMatchers("/api/**", "/h2-console/**"))
 
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/h2-console/**").permitAll()
