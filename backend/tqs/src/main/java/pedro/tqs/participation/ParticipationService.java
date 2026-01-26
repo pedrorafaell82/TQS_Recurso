@@ -71,4 +71,43 @@ public class ParticipationService {
                 p.getCreatedAt()
         );
     }
+
+    @Transactional
+    public void approve(Long participationId, String promoterEmail) {
+        Participation p = participations.findById(participationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Participation not found"));
+
+        AppUser promoter = users.findByEmail(promoterEmail.toLowerCase())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+
+        if (!p.getOpportunity().getCreatedBy().getId().equals(promoter.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not owner of opportunity");
+        }
+
+        if (p.getStatus() != ParticipationStatus.PENDING) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Participation not pending");
+        }
+
+        p.setStatus(ParticipationStatus.APPROVED);
+    }
+
+    @Transactional
+    public void reject(Long participationId, String promoterEmail) {
+        Participation p = participations.findById(participationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Participation not found"));
+
+        AppUser promoter = users.findByEmail(promoterEmail.toLowerCase())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+
+        if (!p.getOpportunity().getCreatedBy().getId().equals(promoter.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not owner of opportunity");
+        }
+
+        if (p.getStatus() != ParticipationStatus.PENDING) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Participation not pending");
+        }
+
+        p.setStatus(ParticipationStatus.REJECTED);
+    }
+
 }
