@@ -37,6 +37,16 @@ public class OpportunityService {
     }
 
     @Transactional(readOnly = true)
+    public OpportunityResponse getById(Long id) {
+        Opportunity o = repo.findById(id)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND,
+                        "Opportunity not found"
+                ));
+        return toResponse(o);
+    }
+
+    @Transactional(readOnly = true)
     public List<OpportunityResponse> listActive() {
         return repo.findByActiveTrue().stream().map(this::toResponse).toList();
     }

@@ -32,4 +32,9 @@ public class OpportunityController {
     public List<OpportunityResponse> listActive() {
         return service.listActive();
     }
+
+    @GetMapping("/{id}")
+    public OpportunityResponse getById(@PathVariable Long id) {
+        return service.getById(id);
+    }
 }
