@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import pedro.tqs.user.*;
 
@@ -26,8 +27,14 @@ class OpportunityTest {
     void clean() {
         opps.deleteAll();
         users.deleteAll();
-        users.save(new AppUser("Admin", "admin@local.test", new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder().encode("adminPass1"), Set.of(Role.ADMIN)));
+        users.save(new AppUser(
+            "Admin",
+            "admin@local.test",
+            new BCryptPasswordEncoder().encode("adminPass1"),
+            Set.of(Role.ADMIN)
+        ));
     }
+
 
     private Long registerVolunteerAndPromote() throws Exception {
         mvc.perform(post("/api/auth/register")
@@ -152,5 +159,19 @@ class OpportunityTest {
                 """))
             .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void getOpportunityDetails_withoutAuth_unauthorized() throws Exception {
+        mvc.perform(get("/api/opportunities/1"))
+        .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getOpportunityDetails_notFound_returns404() throws Exception {
+        mvc.perform(get("/api/opportunities/9999")
+                .with(httpBasic("admin@local.test", "adminPass1")))
+        .andExpect(status().isNotFound());
+    }
+
 
 }
