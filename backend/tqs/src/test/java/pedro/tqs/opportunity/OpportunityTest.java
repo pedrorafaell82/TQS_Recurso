@@ -7,6 +7,9 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
+
+import pedro.tqs.participation.ParticipationRepository;
+import pedro.tqs.points.PointTransactionRepository;
 import pedro.tqs.user.*;
 
 import java.util.Set;
@@ -22,9 +25,14 @@ class OpportunityTest {
     @Autowired MockMvc mvc;
     @Autowired UserRepository users;
     @Autowired OpportunityRepository opps;
+    @Autowired ParticipationRepository participations;
+    @Autowired PointTransactionRepository pointTx;
+
 
     @BeforeEach
     void clean() {
+        pointTx.deleteAll();
+        participations.deleteAll();
         opps.deleteAll();
         users.deleteAll();
         users.save(new AppUser(

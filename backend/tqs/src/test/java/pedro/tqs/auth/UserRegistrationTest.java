@@ -1,5 +1,8 @@
 package pedro.tqs.auth;
 
+import pedro.tqs.opportunity.OpportunityRepository;
+import pedro.tqs.participation.ParticipationRepository;
+import pedro.tqs.points.PointTransactionRepository;
 import pedro.tqs.user.UserRepository;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,9 +22,15 @@ class UserRegistrationTest {
 
     @Autowired MockMvc mvc;
     @Autowired UserRepository userRepository;
+    @Autowired ParticipationRepository participations;
+    @Autowired OpportunityRepository opps;
+    @Autowired PointTransactionRepository pointTx;
 
     @BeforeEach
     void clean() {
+        pointTx.deleteAll();
+        participations.deleteAll();
+        opps.deleteAll();
         userRepository.deleteAll();
     }
 

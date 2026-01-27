@@ -9,7 +9,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import pedro.tqs.opportunity.OpportunityRepository;
 import pedro.tqs.user.*;
-
+import pedro.tqs.points.PointTransactionRepository;
 import java.util.Set;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
@@ -24,9 +24,11 @@ class ParticipationTest {
     @Autowired UserRepository users;
     @Autowired OpportunityRepository opps;
     @Autowired ParticipationRepository participations;
+    @Autowired PointTransactionRepository pointTx;
 
     @BeforeEach
     void clean() {
+        pointTx.deleteAll();
         participations.deleteAll();
         opps.deleteAll();
         users.deleteAll();
@@ -451,4 +453,70 @@ class ParticipationTest {
             .andExpect(jsonPath("$[0].opportunityId").value(opp2))
             .andExpect(jsonPath("$[1].opportunityId").value(opp1));
     }
+
+    @Test
+    void approveParticipation_awardsOpportunityPoints() throws Exception {
+        Long promoterId = register("Promoter", "promoter@test.com");
+        promoteToPromoter(promoterId);
+
+        Long oppId = createOpportunityAsPromoter("promoter@test.com");
+        register("Vol", "vol@test.com");
+
+        mvc.perform(post("/api/opportunities/" + oppId + "/enroll")
+                .with(httpBasic("vol@test.com", "strongPass1")))
+            .andExpect(status().isCreated());
+
+        Long partId = participations.findAll().get(0).getId();
+
+        mvc.perform(post("/api/participations/" + partId + "/approve")
+                .with(httpBasic("promoter@test.com", "strongPass1")))
+            .andExpect(status().isNoContent());
+
+        Assertions.assertEquals(1, pointTx.count());
+        Assertions.assertEquals(10, pointTx.findAll().get(0).getAmount());
+        Assertions.assertEquals(partId, pointTx.findAll().get(0).getParticipation().getId());
+    }
+
+    @Test
+    void rejectParticipation_doesNotAwardPoints() throws Exception {
+        Long promoterId = register("Promoter", "promoter@test.com");
+        promoteToPromoter(promoterId);
+
+        Long oppId = createOpportunityAsPromoter("promoter@test.com");
+        register("Vol", "vol@test.com");
+
+        mvc.perform(post("/api/opportunities/" + oppId + "/enroll")
+                .with(httpBasic("vol@test.com", "strongPass1")))
+            .andExpect(status().isCreated());
+
+        Long partId = participations.findAll().get(0).getId();
+
+        mvc.perform(post("/api/participations/" + partId + "/reject")
+                .with(httpBasic("promoter@test.com", "strongPass1")))
+            .andExpect(status().isNoContent());
+
+        Assertions.assertEquals(0, pointTx.count());
+    }
+
+    @Test
+    void cancelParticipation_doesNotAwardPoints() throws Exception {
+        Long promoterId = register("Promoter", "promoter@test.com");
+        promoteToPromoter(promoterId);
+
+        Long oppId = createOpportunityAsPromoter("promoter@test.com");
+        register("Vol", "vol@test.com");
+
+        mvc.perform(post("/api/opportunities/" + oppId + "/enroll")
+                .with(httpBasic("vol@test.com", "strongPass1")))
+            .andExpect(status().isCreated());
+
+        Long partId = participations.findAll().get(0).getId();
+
+        mvc.perform(post("/api/participations/" + partId + "/cancel")
+                .with(httpBasic("vol@test.com", "strongPass1")))
+            .andExpect(status().isNoContent());
+
+        Assertions.assertEquals(0, pointTx.count());
+    }
+
 }
