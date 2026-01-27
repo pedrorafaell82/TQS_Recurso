@@ -65,7 +65,10 @@ class ParticipationTest {
                     {"title":"Beach","description":"Cleanup","date":"2026-02-10","durationHours":4,"points":10}
                 """))
             .andExpect(status().isCreated());
-        return opps.findAll().get(0).getId();
+        return opps.findAll().stream()
+            .map(pedro.tqs.opportunity.Opportunity::getId)
+            .max(Long::compareTo)
+            .orElseThrow();
     }
 
 
@@ -387,5 +390,65 @@ class ParticipationTest {
         mvc.perform(post("/api/participations/" + partId + "/cancel")
                 .with(httpBasic("vol@test.com", "strongPass1")))
             .andExpect(status().isConflict());
+    }
+
+    @Test
+    void getMyParticipationHistory_includesNonPending() throws Exception {
+        Long promoterId = register("Promoter", "promoter@test.com");
+        promoteToPromoter(promoterId);
+
+        Long opp1 = createOpportunityAsPromoter("promoter@test.com");
+        Long opp2 = createOpportunityAsPromoter("promoter@test.com");
+
+        register("Vol", "vol@test.com");
+
+        mvc.perform(post("/api/opportunities/" + opp1 + "/enroll")
+                .with(httpBasic("vol@test.com", "strongPass1")))
+            .andExpect(status().isCreated());
+        Long p1 = participations.findAll().get(0).getId();
+
+        mvc.perform(post("/api/participations/" + p1 + "/approve")
+                .with(httpBasic("promoter@test.com", "strongPass1")))
+            .andExpect(status().isNoContent());
+
+        mvc.perform(post("/api/opportunities/" + opp2 + "/enroll")
+                .with(httpBasic("vol@test.com", "strongPass1")))
+            .andExpect(status().isCreated());
+        Long p2 = participations.findAll().stream().map(Participation::getId).max(Long::compareTo).orElseThrow();
+
+        mvc.perform(post("/api/participations/" + p2 + "/cancel")
+                .with(httpBasic("vol@test.com", "strongPass1")))
+            .andExpect(status().isNoContent());
+
+        mvc.perform(get("/api/participations/me/history")
+                .with(httpBasic("vol@test.com", "strongPass1")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
+    void getMyParticipationHistory_returnsMostRecentFirst() throws Exception {
+        Long promoterId = register("Promoter", "promoter@test.com");
+        promoteToPromoter(promoterId);
+
+        Long opp1 = createOpportunityAsPromoter("promoter@test.com");
+        Long opp2 = createOpportunityAsPromoter("promoter@test.com");
+
+        register("Vol", "vol@test.com");
+
+        mvc.perform(post("/api/opportunities/" + opp1 + "/enroll")
+                .with(httpBasic("vol@test.com", "strongPass1")))
+            .andExpect(status().isCreated());
+
+        mvc.perform(post("/api/opportunities/" + opp2 + "/enroll")
+                .with(httpBasic("vol@test.com", "strongPass1")))
+            .andExpect(status().isCreated());
+
+        mvc.perform(get("/api/participations/me/history")
+                .with(httpBasic("vol@test.com", "strongPass1")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].opportunityId").value(opp2))
+            .andExpect(jsonPath("$[1].opportunityId").value(opp1));
     }
 }

@@ -44,4 +44,10 @@ public class ParticipationController {
         service.cancel(id, auth.getName());
     }
 
+    @GetMapping("/me/history")
+    @PreAuthorize("hasRole('VOLUNTEER')")
+    public List<ParticipationResponse> myHistory(Authentication auth) {
+        return service.getMyParticipationHistory(auth.getName());
+    }
+
 }

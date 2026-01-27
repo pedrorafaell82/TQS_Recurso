@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface ParticipationRepository extends JpaRepository<Participation, Long> {
     Optional<Participation> findByVolunteerAndOpportunity(AppUser volunteer, Opportunity opportunity);
     List<Participation> findByVolunteer_Email(String email);
+    List<Participation> findByVolunteer_EmailOrderByCreatedAtDesc(String email);
 }
