@@ -43,6 +43,7 @@ public class AppUser {
     public Set<Role> getRoles() { return roles; }
 
     public void setName(String name) { this.name = name; }
+    public void setEmail(String email) { this.email = email; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
     public void setRoles(Set<Role> roles) { this.roles = roles; }
 }
