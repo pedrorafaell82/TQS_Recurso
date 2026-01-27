@@ -9,6 +9,7 @@ import org.springframework.web.server.ResponseStatusException;
 import pedro.tqs.opportunity.Opportunity;
 import pedro.tqs.opportunity.OpportunityRepository;
 import pedro.tqs.participation.dto.ParticipationResponse;
+import pedro.tqs.points.PointsService;
 import pedro.tqs.user.AppUser;
 import pedro.tqs.user.UserRepository;
 
@@ -19,13 +20,16 @@ public class ParticipationService {
     private final OpportunityRepository opportunities;
     private final UserRepository users;
     private static final String USER_NOT_FOUND = "User not found";
+    private final PointsService pointsService;
 
     public ParticipationService(ParticipationRepository participations,
                                 OpportunityRepository opportunities,
-                                UserRepository users) {
+                                UserRepository users,
+                                PointsService pointsService) {
         this.participations = participations;
         this.opportunities = opportunities;
         this.users = users;
+        this.pointsService = pointsService;
     }
 
     @Transactional
@@ -88,6 +92,7 @@ public class ParticipationService {
         }
 
         p.setStatus(ParticipationStatus.APPROVED);
+        pointsService.awardForApprovedParticipation(p);
     }
 
     @Transactional
