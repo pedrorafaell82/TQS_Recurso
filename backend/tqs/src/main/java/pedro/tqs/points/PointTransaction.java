@@ -3,6 +3,7 @@ package pedro.tqs.points;
 import jakarta.persistence.*;
 import pedro.tqs.participation.Participation;
 import pedro.tqs.user.AppUser;
+import pedro.tqs.reward.Reward;
 
 import java.time.Instant;
 
@@ -18,7 +19,8 @@ public class PointTransaction {
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     private AppUser user;
 
-    @OneToOne(optional = false, fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "participation_id", nullable = true)
     private Participation participation;
 
     @Column(nullable = false)
@@ -27,12 +29,20 @@ public class PointTransaction {
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PointTransactionType type;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Reward reward;
+
     protected PointTransaction() {}
 
     public PointTransaction(AppUser user, Participation participation, int amount) {
         this.user = user;
         this.participation = participation;
         this.amount = amount;
+        this.type = PointTransactionType.EARN;
         this.createdAt = Instant.now();
     }
 
@@ -41,4 +51,16 @@ public class PointTransaction {
     public Participation getParticipation() { return participation; }
     public int getAmount() { return amount; }
     public Instant getCreatedAt() { return createdAt; }
+
+    public static PointTransaction redeem(AppUser user, Reward reward, int cost) {
+        PointTransaction tx = new PointTransaction();
+        tx.user = user;
+        tx.participation = null;
+        tx.amount = -cost;
+        tx.type = PointTransactionType.REDEEM;
+        tx.reward = reward;
+        tx.createdAt = Instant.now();
+        return tx;
+    }
+
 }
