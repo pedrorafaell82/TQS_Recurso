@@ -63,16 +63,25 @@ class OpportunityTest {
         return u.getId();
     }
 
-    private Long createOpportunityAsPromoter() throws Exception {
+    private Long createOpportunityAsPromoter(String title, String description, String date, int points) throws Exception {
         mvc.perform(post("/api/opportunities")
                 .with(httpBasic("promoter@test.com", "strongPass1"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    {"title":"Beach","description":"Cleanup","date":"2026-02-10","durationHours":4,"points":10}
-                """))
+                    {"title":"%s","description":"%s","date":"%s","durationHours":4,"points":%d}
+                """.formatted(title, description, date, points)))
             .andExpect(status().isCreated());
 
-        return opps.findAll().get(0).getId();
+        return opps.findAll().stream().map(Opportunity::getId).max(Long::compareTo).orElseThrow();
+    }
+
+    private Long createOpportunityAsPromoter() throws Exception {
+        return createOpportunityAsPromoter(
+                "Beach",
+                "Cleanup",
+                "2026-02-10",
+                10
+        );
     }
 
     @Test
@@ -291,4 +300,60 @@ class OpportunityTest {
             .andExpect(status().isNotFound());
     }
 
+    @Test
+    void searchOpportunities_byQueryText_filtersResults() throws Exception {
+        registerVolunteerAndPromote();
+
+        createOpportunityAsPromoter("Beach Cleanup", "Clean the beach", "2026-02-10", 10);
+        createOpportunityAsPromoter("Tree Planting", "Plant trees", "2026-02-11", 5);
+
+        mvc.perform(get("/api/opportunities")
+                .with(httpBasic("promoter@test.com", "strongPass1"))
+                .param("q", "beach"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(1))
+            .andExpect(jsonPath("$[0].title").value("Beach Cleanup"));
+    }
+
+    @Test
+    void searchOpportunities_byPointsRange_filtersResults() throws Exception {
+        registerVolunteerAndPromote();
+
+        createOpportunityAsPromoter("Low", "x", "2026-02-10", 2);
+        createOpportunityAsPromoter("Mid", "x", "2026-02-11", 10);
+        createOpportunityAsPromoter("High", "x", "2026-02-12", 50);
+
+        mvc.perform(get("/api/opportunities")
+                .with(httpBasic("promoter@test.com", "strongPass1"))
+                .param("minPoints", "5")
+                .param("maxPoints", "20"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(1))
+            .andExpect(jsonPath("$[0].title").value("Mid"));
+    }
+
+    @Test
+    void searchOpportunities_activeDefaultTrue_andActiveFalseReturnsInactive() throws Exception {
+        registerVolunteerAndPromote();
+
+        createOpportunityAsPromoter("Active", "x", "2026-02-10", 10);
+        Long inactiveId = createOpportunityAsPromoter("Inactive", "x", "2026-02-11", 10);
+
+        mvc.perform(patch("/api/opportunities/" + inactiveId + "/deactivate")
+                .with(httpBasic("promoter@test.com", "strongPass1")))
+            .andExpect(status().isNoContent());
+
+        mvc.perform(get("/api/opportunities")
+                .with(httpBasic("promoter@test.com", "strongPass1")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(1))
+            .andExpect(jsonPath("$[0].title").value("Active"));
+
+        mvc.perform(get("/api/opportunities")
+                .with(httpBasic("promoter@test.com", "strongPass1"))
+                .param("active", "false"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(1))
+            .andExpect(jsonPath("$[0].title").value("Inactive"));
+    }
 }

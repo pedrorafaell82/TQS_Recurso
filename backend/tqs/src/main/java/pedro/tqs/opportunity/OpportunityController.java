@@ -34,8 +34,15 @@ public class OpportunityController {
     }
 
     @GetMapping
-    public List<OpportunityResponse> listActive() {
-        return service.listActive();
+    public List<OpportunityResponse> list(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) Integer minPoints,
+            @RequestParam(required = false) Integer maxPoints,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate dateFrom,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate dateTo,
+            @RequestParam(required = false) Boolean active
+    ) {
+        return service.search(q, minPoints, maxPoints, dateFrom, dateTo, active);
     }
 
     @GetMapping("/{id}")
