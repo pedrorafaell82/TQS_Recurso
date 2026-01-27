@@ -1,5 +1,7 @@
 package pedro.tqs.participation;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -135,4 +137,14 @@ public class ParticipationService {
         p.setStatus(ParticipationStatus.CANCELLED);
     }
 
+    @Transactional(readOnly = true)
+    public List<ParticipationResponse> getMyParticipationHistory(String volunteerEmail) {
+        users.findByEmail(volunteerEmail.toLowerCase())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, USER_NOT_FOUND));
+
+        return participations.findByVolunteer_EmailOrderByCreatedAtDesc(volunteerEmail.toLowerCase())
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
 }
