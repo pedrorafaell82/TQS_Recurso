@@ -25,4 +25,10 @@ public class PointsService {
         int points = participation.getOpportunity().getPoints();
         repo.save(new PointTransaction(participation.getVolunteer(), participation, points));
     }
+
+    @Transactional(readOnly = true)
+    public int getBalanceForUser(String email) {
+        return repo.getBalanceForEmail(email.toLowerCase());
+    }
+
 }
