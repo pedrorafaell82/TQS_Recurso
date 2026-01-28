@@ -4,9 +4,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pedro.tqs.participation.Participation;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import pedro.tqs.reward.Reward;
 import pedro.tqs.reward.RewardRepository;
+import pedro.tqs.reward.dto.RewardRedemptionResponse;
 import pedro.tqs.user.UserRepository;
 
 
@@ -59,6 +62,19 @@ public class PointsService {
         }
 
         repo.save(PointTransaction.redeem(user, reward, reward.getCost()));
+    }
+
+    @Transactional(readOnly = true)
+    public List<RewardRedemptionResponse> getMyRewardHistory(String email) {
+        return repo.findRewardRedemptions(email).stream()
+                .map(t -> new RewardRedemptionResponse(
+                        t.getId(),
+                        t.getReward().getId(),
+                        t.getReward().getName(),
+                        Math.abs(t.getAmount()),
+                        t.getCreatedAt()
+                ))
+                .toList();
     }
 
 }

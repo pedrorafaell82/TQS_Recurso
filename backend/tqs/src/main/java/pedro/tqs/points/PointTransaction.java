@@ -50,6 +50,7 @@ public class PointTransaction {
     public AppUser getUser() { return user; }
     public Participation getParticipation() { return participation; }
     public int getAmount() { return amount; }
+    public Reward getReward() { return reward; }
     public Instant getCreatedAt() { return createdAt; }
 
     public static PointTransaction redeem(AppUser user, Reward reward, int cost) {
