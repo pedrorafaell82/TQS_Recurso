@@ -4,6 +4,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import pedro.tqs.points.PointsService;
+import pedro.tqs.reward.dto.RewardRedemptionResponse;
 import pedro.tqs.reward.dto.RewardResponse;
 
 import java.util.List;
@@ -32,5 +33,11 @@ public class RewardController {
     @ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
     public void redeem(@PathVariable Long id, Authentication auth) {
         points.redeem(auth.getName(), id);
+    }
+
+    @GetMapping("/me/history")
+    @PreAuthorize("hasRole('VOLUNTEER')")
+    public List<RewardRedemptionResponse> myHistory(Authentication auth) {
+        return points.getMyRewardHistory(auth.getName());
     }
 }
