@@ -31,4 +31,6 @@ public class Reward {
 
     public void setActive(boolean active) { this.active = active; }
     public void setCost(int cost) { this.cost = cost; }
+    public void setName(String name) { this.name = name; }
+
 }
