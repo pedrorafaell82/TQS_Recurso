@@ -19,11 +19,14 @@ public class PointsService {
     private final PointTransactionRepository repo;
     private final RewardRepository rewards;
     private final UserRepository users;
+    private final PointRuleConfigRepository rulesRepo;
 
-    public PointsService(PointTransactionRepository repo, RewardRepository rewards, UserRepository users) {
+
+    public PointsService(PointTransactionRepository repo, RewardRepository rewards, UserRepository users, PointRuleConfigRepository rulesRepo) {
         this.repo = repo;
         this.rewards = rewards;
         this.users = users;
+        this.rulesRepo = rulesRepo;
     }
 
     @Transactional
@@ -35,8 +38,16 @@ public class PointsService {
             return;
         }
 
-        int points = participation.getOpportunity().getPoints();
-        repo.save(new PointTransaction(participation.getVolunteer(), participation, points));
+        int base = participation.getOpportunity().getPoints();
+        double mult = getApprovalMultiplier();
+        int awarded = (int) Math.round(base * mult);
+
+        repo.save(new PointTransaction(
+                participation.getVolunteer(),
+                participation,
+                awarded
+        ));
+
     }
 
     @Transactional(readOnly = true)
@@ -75,6 +86,19 @@ public class PointsService {
                         t.getCreatedAt()
                 ))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public double getApprovalMultiplier() {
+        return rulesRepo.findById(1L).map(PointRuleConfig::getApprovalMultiplier).orElse(1.0);
+    }
+
+    @Transactional
+    public double updateApprovalMultiplier(double value) {
+        PointRuleConfig cfg = rulesRepo.findById(1L).orElse(new PointRuleConfig(1.0));
+        cfg.setApprovalMultiplier(value);
+        rulesRepo.save(cfg);
+        return cfg.getApprovalMultiplier();
     }
 
 }

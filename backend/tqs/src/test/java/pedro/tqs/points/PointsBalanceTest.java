@@ -30,6 +30,7 @@ class PointsBalanceTest {
     @Autowired OpportunityRepository opps;
     @Autowired ParticipationRepository participations;
     @Autowired PointTransactionRepository pointTx;
+    @Autowired PointRuleConfigRepository rulesRepo;
 
     @BeforeEach
     void clean() {
@@ -37,7 +38,10 @@ class PointsBalanceTest {
         participations.deleteAll();
         opps.deleteAll();
         users.deleteAll();
+        rulesRepo.deleteAll();
+        rulesRepo.save(new PointRuleConfig(1.0));
         seedAdmin();
+
     }
 
     private void seedAdmin() {
