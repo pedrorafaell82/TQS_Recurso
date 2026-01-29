@@ -142,9 +142,9 @@ class OpportunityTest {
     }
 
     @Test
-    void browseOpportunities_withoutAuth_unauthorized() throws Exception {
+    void browseOpportunities_withoutAuth_ok() throws Exception {
         mvc.perform(get("/api/opportunities"))
-            .andExpect(status().isUnauthorized());
+            .andExpect(status().isOk());
     }
 
     @Test
@@ -190,10 +190,15 @@ class OpportunityTest {
     }
 
     @Test
-    void getOpportunityDetails_withoutAuth_unauthorized() throws Exception {
-        mvc.perform(get("/api/opportunities/1"))
-        .andExpect(status().isUnauthorized());
+    void getOpportunityDetails_withoutAuth_ok_whenExists() throws Exception {
+        registerVolunteerAndPromote();
+        Long id = createOpportunityAsPromoter();
+
+        mvc.perform(get("/api/opportunities/" + id))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(id));
     }
+
 
     @Test
     void getOpportunityDetails_notFound_returns404() throws Exception {
