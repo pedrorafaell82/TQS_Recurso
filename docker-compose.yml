@@ -24,3 +24,11 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+
+  selenium:
+    image: selenium/standalone-firefox:latest
+    container_name: tqs-selenium
+    shm_size: 2gb
+    ports:
+      - "4444:4444"
+
