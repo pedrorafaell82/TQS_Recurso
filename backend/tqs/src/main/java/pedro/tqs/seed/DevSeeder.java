@@ -18,6 +18,8 @@ import pedro.tqs.points.PointRuleConfigRepository;
 import java.time.LocalDate;
 import java.util.Set;
 
+
+
 @Profile("dev")
 @Component
 public class DevSeeder implements CommandLineRunner {
@@ -27,6 +29,23 @@ public class DevSeeder implements CommandLineRunner {
     private final OpportunityRepository opps;
     private final PointRuleConfigRepository rules;
     private final PasswordEncoder encoder;
+
+        private static final String ADMIN_EMAIL = "admin@local.test";
+        private static final String PROMOTER_EMAIL = "promoter@test.com";
+        private static final String VOL_EMAIL = "vol@test.com";
+
+        private static final String ENV_ADMIN_PASS = "DEV_ADMIN_PASSWORD";
+        private static final String ENV_USER_PASS = "DEV_USER_PASSWORD";
+
+        private String devAdminPassword() {
+        String p = System.getenv(ENV_ADMIN_PASS);
+        return (p != null && !p.isBlank()) ? p : "change-me-admin";
+        }
+
+        private String devUserPassword() {
+        String p = System.getenv(ENV_USER_PASS);
+        return (p != null && !p.isBlank()) ? p : "change-me-user";
+        }
 
     public DevSeeder(UserRepository users,
                      RewardRepository rewards,
@@ -56,31 +75,31 @@ public class DevSeeder implements CommandLineRunner {
 
     private void seedUsers() {
         // ADMIN
-        users.findByEmail("admin@local.test").orElseGet(() ->
+        users.findByEmail(ADMIN_EMAIL).orElseGet(() ->
                 users.save(new AppUser(
                         "Admin",
-                        "admin@local.test",
-                        encoder.encode("adminPass1"),
+                        ADMIN_EMAIL,
+                        encoder.encode(devAdminPassword()),
                         Set.of(Role.ADMIN)
                 ))
         );
 
         // PROMOTER
-        users.findByEmail("promoter@test.com").orElseGet(() ->
+        users.findByEmail(PROMOTER_EMAIL).orElseGet(() ->
                 users.save(new AppUser(
                         "Promoter",
-                        "promoter@test.com",
-                        encoder.encode("strongPass1"),
+                        PROMOTER_EMAIL,
+                        encoder.encode(devUserPassword()),
                         Set.of(Role.PROMOTER)
                 ))
         );
 
         // VOLUNTEER
-        users.findByEmail("vol@test.com").orElseGet(() ->
+        users.findByEmail(VOL_EMAIL).orElseGet(() ->
                 users.save(new AppUser(
                         "Volunteer",
-                        "vol@test.com",
-                        encoder.encode("strongPass1"),
+                        VOL_EMAIL,
+                        encoder.encode(devUserPassword()),
                         Set.of(Role.VOLUNTEER)
                 ))
         );
@@ -97,7 +116,7 @@ public class DevSeeder implements CommandLineRunner {
     private void seedOpportunities() {
         if (opps.count() > 0) return;
 
-        AppUser promoter = users.findByEmail("promoter@test.com")
+        AppUser promoter = users.findByEmail(PROMOTER_EMAIL)
                 .orElseThrow(() -> new IllegalStateException("Promoter seed missing"));
 
         Opportunity o1 = new Opportunity("Beach Cleanup", "Clean the beach",
