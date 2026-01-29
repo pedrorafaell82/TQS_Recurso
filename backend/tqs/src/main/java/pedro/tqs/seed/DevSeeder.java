@@ -75,35 +75,35 @@ public class DevSeeder implements CommandLineRunner {
 
     private void seedUsers() {
         // ADMIN
-        users.findByEmail(ADMIN_EMAIL).orElseGet(() ->
+        if (users.findByEmail(ADMIN_EMAIL).isEmpty()) {
                 users.save(new AppUser(
-                        "Admin",
-                        ADMIN_EMAIL,
-                        encoder.encode(devAdminPassword()),
-                        Set.of(Role.ADMIN)
-                ))
-        );
+                "Admin",
+                ADMIN_EMAIL,
+                encoder.encode(devAdminPassword()),
+                Set.of(Role.ADMIN)
+                ));
+        }
 
         // PROMOTER
-        users.findByEmail(PROMOTER_EMAIL).orElseGet(() ->
+        if (users.findByEmail(PROMOTER_EMAIL).isEmpty()) {
                 users.save(new AppUser(
-                        "Promoter",
-                        PROMOTER_EMAIL,
-                        encoder.encode(devUserPassword()),
-                        Set.of(Role.PROMOTER)
-                ))
-        );
+                "Promoter",
+                PROMOTER_EMAIL,
+                encoder.encode(devUserPassword()),
+                Set.of(Role.PROMOTER)
+                ));
+        }
 
         // VOLUNTEER
-        users.findByEmail(VOL_EMAIL).orElseGet(() ->
+        if (users.findByEmail(VOL_EMAIL).isEmpty()) {
                 users.save(new AppUser(
-                        "Volunteer",
-                        VOL_EMAIL,
-                        encoder.encode(devUserPassword()),
-                        Set.of(Role.VOLUNTEER)
-                ))
-        );
-    }
+                "Volunteer",
+                VOL_EMAIL,
+                encoder.encode(devUserPassword()),
+                Set.of(Role.VOLUNTEER)
+                ));
+        }
+        }
 
     private void seedRewards() {
         if (rewards.count() > 0) return;
